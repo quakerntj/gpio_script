@@ -90,7 +90,7 @@ int Gpio::getDirection() {
 	int fd;
 
 	snprintf(path, DIRECTION_MAX, "/sys/class/gpio/gpio%d/direction", mPin);
-	fd = open(path, O_WRONLY);
+	fd = open(path, O_RDONLY);
 	if (-1 == fd) {
 		fprintf(stderr, "Failed to open gpio direction for writing!\n");
 		return(-1);
@@ -224,7 +224,7 @@ int readStringFromN(char * in, size_t size, const char * path) {
     if (in == NULL || path == NULL)
         return -1;
 
-	fd = open(path, O_WRONLY);
+	fd = open(path, O_RDONLY);
 	if (-1 == fd) {
 		fprintf(stderr, "Failed to open path %s. (%d) %s\n", path, errno, strerror(errno));
 		return(errno);
@@ -282,7 +282,7 @@ static void sigproc(int dunno) {
 }
 
 int initChip() {
-	static char buffer[5] = "";
+	char buffer[5];
     size_t bSize = sizeof(buffer);
 	const char ngpioPath[] = "/sys/class/gpio/gpiochip0/ngpio";
 	const char basePath[] = "/sys/class/gpio/gpiochip0/base";
@@ -318,6 +318,7 @@ int initChip() {
     return 0;
 
 error:
+    fprintf(stderr, "Failed to parse number\n");
     gGpios = 0;
     gBase = 0;
     return errno;
