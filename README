@@ -1,0 +1,47 @@
+GPIO command
+
+This parser use sysfs to run script and controll GPIO.
+
+Script Commands:
+> gpio // For start
+> list // List all gpios.  Assume only one chip. (TODO)
+> gpioN // N for gpio number.  Show the gpioN's configuration.  Exported gpio show In/Out, Pulls, Edge, and Active_low.  Or show not exported.
+> gpioN export // Export gpio N.
+> assert // If there are error, show error and exit.
+> showerror // If there are error, show error and clean error.
+> gpioN dir in // Set gpioN direction for input.  "out" for output.
+> gpioN dir out // Set gpioN direction for input.  "out" for output.
+> gpioN read // Read gpioN's value in input mode.  Do nothing in output mode.
+> gpioN edge <trigger> // Set gpioN edge trigger. <trigger> for "none", "rising", "falling", or "both".
+> gpioN active_low 1 // Set gpio trigger level.
+> ? // show all command help
+> gpioN ? // show gpio detail help
+> if $? == 0 then <do something> else <do something> done // according to last result of function return do something.
+> function FUNCNAME() { <function code> } // declare function
+> include <filename of gpio script>
+
+
+example
+    extern int externalFunction() 
+    function initGpio() {
+        $1 export
+        $1 dir in
+        $1 edge falling
+    }
+
+    function onGpio5 {
+        $1 = gpio5 read
+        if $1 == 0 then
+            call "syscommand"
+        else
+            system "bash a.sh"
+    }
+
+    initGpio gpio5
+    // wait if there is event
+    listen gpio5 onGpio5
+    sleep 5
+    // user stop the listen    
+    stop listen onGpio5
+    
+    
