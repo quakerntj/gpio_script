@@ -127,6 +127,7 @@ int main(void) {
     if (ret = initChip() < 0)
         return ret;
     yyparse();
+    finishGpios();
     return 0;
 }
 
