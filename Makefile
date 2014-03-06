@@ -12,5 +12,5 @@ lex.cpp: lex.l
 only: bison.cpp lex.cpp
 	g++ -g -o $@ $^
 
-parser: bison.cpp lex.cpp
+parser: bison.cpp lex.cpp Gpio.cpp
 	g++ -std=c++0x -g -o $@ $^
