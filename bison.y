@@ -56,13 +56,55 @@ gpio:
     ;
 
 gpio_command:
-    GPIO_PIN runCmd {printf("gpio%d status\n", $1.pin);}
-    | GPIO_PIN EXPORT runCmd {printf("gpio%d exported\n", $1.pin);}
-    | GPIO_PIN UNEXPORT runCmd {printf("gpio%d unexported\n", $1.pin);}
-    | GPIO_PIN READ runCmd {printf("gpio%d read is\n", $1.pin);}
-    | GPIO_PIN WRITE BOOLEAN runCmd {printf("gpio%d write %d\n", $1.pin, $3.boolean);}
-    | GPIO_PIN DIRECTION runCmd {printf("gpio%d direction is\n", $1.pin);}
-    | GPIO_PIN DIRECTION BOOLEAN runCmd {printf("gpio%d direction %d\n", $1.pin, $3.boolean);}
+    GPIO_PIN runCmd {
+        Gpio* gpio = Gpio::getInstance($1.pin);
+        bool isExported = gpio->getIsExported();
+        int dir = gpio->getDir();
+        int edge = gpio->getEdge();
+        printf("gpio%d status\n", $1.pin);
+        printf("  Is exported? %d\n", isExported);
+        if (isExported) {
+            if (dir != Gpio::UNKNOWN)
+                printf("  Direction: %s\n", dir == Gpio::IN ? "IN" : "OUT");
+            else
+                printf("  Direction: UNKNOWN\n");
+            if (dir == Gpio::IN)
+                printf("  Edge: %s\n", gpio->getEdgeName(edge));
+        }
+    }
+    | GPIO_PIN EXPORT runCmd {
+        printf("gpio%d exported\n", $1.pin);
+        Gpio* gpio = Gpio::getInstance($1.pin);
+        int ret = gpio->exportGpio();
+        printf("export return %d\n", ret);
+    }
+    | GPIO_PIN UNEXPORT runCmd {
+        printf("gpio%d unexported\n", $1.pin);
+        Gpio* gpio = Gpio::getInstance($1.pin);
+        int ret = gpio->unexportGpio();
+        printf("unexport return %d\n", ret);
+    }
+    | GPIO_PIN READ runCmd {
+        Gpio* gpio = Gpio::getInstance($1.pin);
+        int ret = gpio->read();
+        printf("read return %d\n", ret);
+    }
+    | GPIO_PIN WRITE BOOLEAN runCmd {
+        Gpio* gpio = Gpio::getInstance($1.pin);
+        int ret = gpio->write($3.boolean);
+        printf("write return %d\n", ret);
+    }
+    | GPIO_PIN DIRECTION runCmd {
+        Gpio* gpio = Gpio::getInstance($1.pin);
+        int dir = gpio->getDirection();
+        if (dir != Gpio::UNKNOWN)
+            printf("gpio%d direction is %s\n", $1.pin, dir == Gpio::IN ? "in" : "out");
+    }
+    | GPIO_PIN DIRECTION BOOLEAN runCmd {
+        Gpio* gpio = Gpio::getInstance($1.pin);
+        int ret = gpio->setDirection($3.boolean);
+        printf("setDirection return %d\n", ret);
+    }
     | GPIO_PIN EDGE runCmd {printf("gpio%d edge is\n", $1.pin);}
     | GPIO_PIN EDGE TRIGGER runCmd {printf("gpio%d edge %s\n", $1.pin, $3.str);}
     | GPIO_PIN ACTIVE_LOW runCmd {printf("gpio%d active_low is \n", $1.pin);}
