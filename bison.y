@@ -2,8 +2,10 @@
 #include <stdio.h>
 #include <vector>
 #include <string.h>
+#include <errno.h>
 #include "ATS.h"
 #include "bison.hpp"
+#include "Gpio.h"
 
 #define DD(args...) printf(args)
 
@@ -77,12 +79,11 @@ void usage() {
     printf("\n");
 }
 
-void init() {
-}
-
 int main(void) {
+    int ret;
     usage();
-    init();
+    if (ret = initChip() < 0)
+        return ret;
     yyparse();
     return 0;
 }

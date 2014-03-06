@@ -30,10 +30,19 @@ public:
     int read();
     int write(int boolean);
 
+public:
+    static Gpio* getInstance(int pin);
+
 private:
     // Disallow copy and sign
     Gpio(const Gpio&);
     Gpio();
 };
+
+extern int gGpios;
+extern int gBase;
+int readStringFromN(char * in, size_t size, const char * path);
+int initChip();
+void finishGpios();
 
 #endif

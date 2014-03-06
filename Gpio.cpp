@@ -13,6 +13,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
+#include <signal.h>
 #include "Gpio.h"
 
 #define IN  0
@@ -212,4 +214,127 @@ int Gpio::write(int value) {
 	close(fd);
 	return(0);
 }
+
+int gGpios = 0;
+int gBase = 0;
+Gpio ** gGpioClasses = NULL;
+
+int readStringFromN(char * in, size_t size, const char * path) {
+	int fd;
+    if (in == NULL || path == NULL)
+        return -1;
+
+	fd = open(path, O_WRONLY);
+	if (-1 == fd) {
+		fprintf(stderr, "Failed to open path %s. (%d) %s\n", path, errno, strerror(errno));
+		return(errno);
+	}
+    
+    int len = ::read(fd, in, size);
+	if (-1 == len) {
+		fprintf(stderr, "Failed to read. (%d) %s\n", errno, strerror(errno));
+		return(errno);
+	}
+	close(fd);
+    return 0;
+}
+
+void finishGpios() {
+	printf("Reset all gpios\n");
+    if (gGpios != 0) {
+        if (gGpioClasses == NULL)
+            return;
+        for (size_t i = 0; i < gGpios; i++) {
+            if (gGpioClasses[i] != NULL) {
+                delete gGpioClasses[i];
+                gGpioClasses[i] = 0;
+            }
+        }
+        delete [] gGpioClasses;
+        gGpioClasses = NULL;
+    }
+}
+
+static void sigproc(int dunno) {
+	switch (dunno) {
+	case SIGHUP:
+		printf("Get a signal -- SIGHUP\n");
+		break;
+	case SIGINT:
+		printf("Get a signal -- SIGINT\n");
+		break;
+	case SIGQUIT:
+		printf("Get a signal -- SIGQUIT\n");
+		break;
+	case SIGKILL:
+		printf("Get a signal -- SIGKILL\n");
+		break;
+	case SIGTERM:
+		printf("Get a signal -- SIGTERM\n");
+		break;
+	case SIGPIPE:
+		printf("Get a signal -- SIGPIPE\n");
+		break;
+	}
+	finishGpios();
+	exit(0);
+	return;
+}
+
+int initChip() {
+	static char buffer[5] = "";
+    size_t bSize = sizeof(buffer);
+	const char ngpioPath[] = "/sys/class/gpio/gpiochip0/ngpio";
+	const char basePath[] = "/sys/class/gpio/gpiochip0/base";
+	int ret;
+    if (ret = readStringFromN(buffer, bSize, ngpioPath))
+        return ret;
+    errno = 0;
+    gGpios = atoi(buffer);
+    if (errno) goto error;
+
+    if (ret = readStringFromN(buffer, bSize, basePath))
+        exit(ret);
+
+    errno = 0;
+    gBase = atoi(buffer);
+    if (errno) goto error;
+
+    printf("Chip 0 has %d gpios. It's base is %d\n", gGpios, gBase);
+
+    if (gGpios != 0) {
+        gGpioClasses = new Gpio*[gGpios];
+        for (size_t i = 0; i < gGpios; i++) {
+            gGpioClasses[i] = NULL;
+        }
+    }
+
+	signal(SIGHUP, sigproc);
+	signal(SIGINT, sigproc);
+	signal(SIGQUIT, sigproc);
+	signal(SIGKILL, sigproc);
+	signal(SIGTERM, sigproc);
+	signal(SIGPIPE, sigproc);
+    return 0;
+
+error:
+    gGpios = 0;
+    gBase = 0;
+    return errno;
+}
+
+Gpio* Gpio::getInstance(int pin) {
+    if (pin < 0 || pin >= gGpios) {
+        fprintf(stderr, "Invalide gpio pin.\n");
+        return NULL;
+    }
+    if (gGpioClasses == NULL) {
+        fprintf(stderr, "No any gpio.\n");
+        exit(-1);
+    }
+    if (gGpioClasses[pin] == NULL)
+        gGpioClasses[pin] = new Gpio(pin);
+    return gGpioClasses[pin];
+}
+
 
